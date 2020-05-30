@@ -16,7 +16,7 @@ Below are some examples of how you can get started
 ```c#
 
 //Install from URL
-PythonNetInstaller.Installer.DownloadAndInstallPython("https://www.python.org/ftp/python/3.8.3/python-3.8.3-embed-amd64.zip");
+PythonNetInstaller.Installer.InstallPythonFromUri(new Uri("https://www.python.org/ftp/python/3.8.3/python-3.8.3-embed-amd64.zip"));
 //Install from embeded assembly           
 PythonNetInstaller.Installer.InstallPythonFromAssembly(Assembly.GetExecutingAssembly(), "python-3.7.3-embed-amd64.zip");
 //Install from file         
