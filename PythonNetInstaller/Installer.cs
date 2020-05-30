@@ -20,15 +20,16 @@ namespace PythonNetInstaller
             }
         }
 
-        public static void DownloadAndInstallPython(string download_url, bool delete_exisiting_installation = false)
+        public static void InstallPythonFromUri(Uri download_url, bool delete_exisiting_installation = false)
         {
-            if (!download_url.EndsWith(".zip"))
+            var stringurl = download_url.ToString();
+            if (!stringurl.EndsWith(".zip"))
             {
                 throw new ArgumentException("Must end in .zip", "download_url");
             }
 
-            var filepath = Path.GetFileName(download_url);
-            RunCommand($"cd {INSTALL_PATH} && curl {download_url} -o {filepath}");
+            var filepath = Path.GetFileName(stringurl);
+            RunCommand($"cd {INSTALL_PATH} && curl {stringurl} -o {filepath}");
             var extractpath = Path.Combine(INSTALL_PATH, filepath);
             InstallPythonFromZip(extractpath, delete_exisiting_installation);
         }
