@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Smasherprog</Authors>
+    <Company />
+    <Product />
+    <Description>A .net python application scoped installer</Description>
+    <PackageProjectUrl>https://github.com/smasherprog/PythonNetInstaller</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/smasherprog/PythonNetInstaller</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+</Project>
