@@ -35,7 +35,7 @@ PythonNetInstaller.Installer.RunCommand("python.exe args_go_here");
 PythonNetInstaller.Installer.RunCommand("pip install tensorflow");
 
 ```
-<p>This library is best suited for use with <a href="http://pythonnet.github.io/">http://pythonnet.github.io/</a></p>
+<p>This library is best suited for use with <a href="https://github.com/pythonnet/pythonnet">https://github.com/pythonnet/pythonnet</a></p>
 <p>for example, after installing tensorflow, you can import it into your .NET application to load a model:</p>
 
 ```c#
