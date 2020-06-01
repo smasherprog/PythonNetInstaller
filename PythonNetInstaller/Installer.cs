@@ -22,6 +22,9 @@ namespace PythonNetInstaller
             }
         }
 
+        public static Action<string> OutputDataReceived { get; set; } = (d) => { Console.WriteLine(d); };
+        public static Action<string> ErrorDataReceived { get; set; } = (d) => { Console.WriteLine(d); };
+
         public static void InstallPythonFromUri(Uri download_url)
         {
             var stringurl = download_url.ToString();
@@ -157,8 +160,8 @@ namespace PythonNetInstaller
                 commandMode = "-c";
             }
             process.StartInfo.Arguments = $"{commandMode} {command}";
-            process.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
-            process.ErrorDataReceived += (s, e) => Console.WriteLine(e.Data);
+            process.OutputDataReceived += (s, e) => OutputDataReceived?.Invoke(e.Data);
+            process.ErrorDataReceived += (s, e) => ErrorDataReceived?.Invoke(e.Data);
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -187,8 +190,8 @@ namespace PythonNetInstaller
                 commandMode = "-c";
             }
             process.StartInfo.Arguments = $"{commandMode} {command}";
-            process.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
-            process.ErrorDataReceived += (s, e) => Console.WriteLine(e.Data);
+            process.OutputDataReceived += (s, e) => OutputDataReceived?.Invoke(e.Data);
+            process.ErrorDataReceived += (s, e) => ErrorDataReceived?.Invoke(e.Data);
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
