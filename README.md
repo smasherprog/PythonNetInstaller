@@ -27,12 +27,12 @@ PythonNetInstaller.Installer.InstallPip();
 
 ```
 
-<p>After this, you can run python commands:</p>
+<p>After this, you can run python commands. When using pip install commands you MUSt use --user, otherwise it will fail</p>
 
 ```c#
   
 PythonNetInstaller.Installer.RunCommand("python.exe args_go_here");
-PythonNetInstaller.Installer.RunCommand("pip install tensorflow");
+PythonNetInstaller.Installer.RunCommand("pip install --user tensorflow");
 
 ```
 <p>This library is best suited for use with <a href="https://github.com/pythonnet/pythonnet">https://github.com/pythonnet/pythonnet</a></p>
