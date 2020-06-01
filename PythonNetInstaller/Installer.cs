@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -57,6 +58,9 @@ namespace PythonNetInstaller
                 Directory.CreateDirectory(scriptsdir);
             }
             Environment.SetEnvironmentVariable("PATH", $"{scriptsdir};" + Environment.GetEnvironmentVariable("PATH"));
+            var file = Directory.GetFiles(PythonHomeDirectory, "*._pth", SearchOption.TopDirectoryOnly);
+            var filecontents = File.ReadAllText(file[0]).Replace("#import site", "import site");
+            File.WriteAllText(file[0], filecontents);
         }
 
         public static void InstallPythonFromAssembly(Assembly assembly, string resource_name, bool delete_exisiting_installation = false)
@@ -68,15 +72,7 @@ namespace PythonNetInstaller
 
             var extractpath = Path.Combine(INSTALL_PATH, resource_name);
             CopyEmbeddedResourceToFile(assembly, resource_name, extractpath);
-            extractpath = extractpath.Replace(".zip", "");
-            if (Directory.Exists(extractpath) && delete_exisiting_installation)
-            {
-                Directory.Delete(extractpath, true);
-            }
-
-            ZipFile.ExtractToDirectory(extractpath + ".zip", extractpath);
-            EMBEDDED_PYTHON = resource_name.Replace(".zip", "");
-            Environment.SetEnvironmentVariable("PATH", $"{PythonHomeDirectory};" + Environment.GetEnvironmentVariable("PATH"));
+            InstallPythonFromZip(extractpath, delete_exisiting_installation);
         }
 
         public static void InstallPip()
@@ -121,23 +117,36 @@ namespace PythonNetInstaller
             return Directory.Exists(moduleDir) && File.Exists(Path.Combine(moduleDir, "__init__.py"));
         }
 
-        public static void RunCommand(string command, bool runInBackground = true /* this should only be true when debugging as it will open a window for each command and you can inspect the*/)
+        public static (string stderroutput, string stdoutput) RunCommand(string command)
         {
-            System.Diagnostics.Process process = new System.Diagnostics.Process();
-            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            if (runInBackground)
-                startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            startInfo.FileName = "cmd.exe";
-            string commandMode = runInBackground ? "/C" : "/K";
+            if ((command.Contains("pip install") || command.Contains("pip.exe install")) && !command.Contains("--user"))
+            {
+                throw new ArgumentException("pip install must be used with the --user command otherwise installs will fail!", "command");
+            }
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            string commandMode = "/C";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                startInfo.FileName = "/bin/bash";
+                process.StartInfo.FileName = "/bin/bash";
                 commandMode = "-c";
             }
-            startInfo.Arguments = $"{commandMode} {command}";
-            process.StartInfo = startInfo;
+            process.StartInfo.Arguments = $"{commandMode} {command}";
             process.Start();
+            string err = process.StandardError.ReadToEnd();
+            string output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
+            return (err, output);
         }
     }
 }
