@@ -32,7 +32,7 @@ PythonNetInstaller.Installer.InstallPip();
 ```c#
   
 PythonNetInstaller.Installer.RunCommand("python.exe args_go_here");
-PythonNetInstaller.Installer.RunCommand("pip install --user tensorflow");
+PythonNetInstaller.Installer.RunCommand("pip install tensorflow");
 
 ```
 <p>This library is best suited for use with <a href="https://github.com/pythonnet/pythonnet">https://github.com/pythonnet/pythonnet</a></p>
