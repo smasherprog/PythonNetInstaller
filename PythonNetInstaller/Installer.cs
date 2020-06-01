@@ -12,6 +12,7 @@ namespace PythonNetInstaller
     {
         private static string EMBEDDED_PYTHON = string.Empty;
         private static string INSTALL_PATH { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        private static string EnvPath = string.Empty;
         public static string PythonHomeDirectory
         {
             get
@@ -21,7 +22,7 @@ namespace PythonNetInstaller
             }
         }
 
-        public static void InstallPythonFromUri(Uri download_url, bool delete_exisiting_installation = false)
+        public static void InstallPythonFromUri(Uri download_url)
         {
             var stringurl = download_url.ToString();
             if (!stringurl.EndsWith(".zip"))
@@ -30,12 +31,28 @@ namespace PythonNetInstaller
             }
 
             var filepath = Path.GetFileName(stringurl);
-            RunCommand($"cd {INSTALL_PATH} && curl {stringurl} -o {filepath}");
+            InternalRunCommand($"cd {INSTALL_PATH} && curl {stringurl} -o {filepath}");
             var extractpath = Path.Combine(INSTALL_PATH, filepath);
-            InstallPythonFromZip(extractpath, delete_exisiting_installation);
+            InstallPythonFromZip(extractpath);
         }
 
-        public static void InstallPythonFromZip(string file_path, bool delete_exisiting_installation = false)
+        private static void RemoveFromPathWhereFileExists(string filename)
+        {
+            var path = Environment.GetEnvironmentVariable("PATH");
+            var directories = path.Split(';');
+            var newenv = string.Empty;
+            foreach (var dir in directories)
+            {
+                var fullpath = Path.Combine(dir, filename);
+                if (!File.Exists(fullpath))
+                {
+                    newenv += dir + ";";
+                }
+            }
+            Environment.SetEnvironmentVariable("PATH", newenv);
+        }
+
+        public static void InstallPythonFromZip(string file_path)
         {
             if (!file_path.EndsWith(".zip"))
             {
@@ -44,13 +61,14 @@ namespace PythonNetInstaller
 
             var resource_name = Path.GetFileName(file_path).Replace(".zip", "");
             var extractpath = Path.Combine(INSTALL_PATH, resource_name);
-            if (Directory.Exists(extractpath) && delete_exisiting_installation)
+            if (Directory.Exists(extractpath))
             {
                 Directory.Delete(extractpath, true);
             }
-
             ZipFile.ExtractToDirectory(file_path, extractpath);
             EMBEDDED_PYTHON = resource_name;
+            RemoveFromPathWhereFileExists("python.exe");
+            RemoveFromPathWhereFileExists("pip.exe");
             Environment.SetEnvironmentVariable("PATH", $"{PythonHomeDirectory};" + Environment.GetEnvironmentVariable("PATH"));
             var scriptsdir = Path.Combine(PythonHomeDirectory, "Scripts");
             if (!Directory.Exists(scriptsdir))
@@ -58,12 +76,13 @@ namespace PythonNetInstaller
                 Directory.CreateDirectory(scriptsdir);
             }
             Environment.SetEnvironmentVariable("PATH", $"{scriptsdir};" + Environment.GetEnvironmentVariable("PATH"));
+            EnvPath = Environment.GetEnvironmentVariable("PATH");
             var file = Directory.GetFiles(PythonHomeDirectory, "*._pth", SearchOption.TopDirectoryOnly);
             var filecontents = File.ReadAllText(file[0]).Replace("#import site", "import site");
             File.WriteAllText(file[0], filecontents);
         }
 
-        public static void InstallPythonFromAssembly(Assembly assembly, string resource_name, bool delete_exisiting_installation = false)
+        public static void InstallPythonFromAssembly(Assembly assembly, string resource_name)
         {
             if (!resource_name.EndsWith(".zip"))
             {
@@ -72,7 +91,7 @@ namespace PythonNetInstaller
 
             var extractpath = Path.Combine(INSTALL_PATH, resource_name);
             CopyEmbeddedResourceToFile(assembly, resource_name, extractpath);
-            InstallPythonFromZip(extractpath, delete_exisiting_installation);
+            InstallPythonFromZip(extractpath);
         }
 
         public static void InstallPip()
@@ -82,8 +101,8 @@ namespace PythonNetInstaller
             {
                 Directory.CreateDirectory(libDir);
             }
-            RunCommand($"cd {libDir} && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py");
-            RunCommand($"cd {PythonHomeDirectory} && python.exe Lib\\get-pip.py");
+            InternalRunCommand($"cd {libDir} && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py");
+            InternalRunCommand($"cd {PythonHomeDirectory} && python.exe Lib\\get-pip.py");
         }
 
         private static void CopyEmbeddedResourceToFile(Assembly assembly, string resourceName, string filePath)
@@ -117,12 +136,8 @@ namespace PythonNetInstaller
             return Directory.Exists(moduleDir) && File.Exists(Path.Combine(moduleDir, "__init__.py"));
         }
 
-        public static (string stderroutput, string stdoutput) RunCommand(string command)
+        private static void InternalRunCommand(string command)
         {
-            if ((command.Contains("pip install") || command.Contains("pip.exe install")) && !command.Contains("--user"))
-            {
-                throw new ArgumentException("pip install must be used with the --user command otherwise installs will fail!", "command");
-            }
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -142,11 +157,42 @@ namespace PythonNetInstaller
                 commandMode = "-c";
             }
             process.StartInfo.Arguments = $"{commandMode} {command}";
+            process.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
+            process.ErrorDataReceived += (s, e) => Console.WriteLine(e.Data);
             process.Start();
-            string err = process.StandardError.ReadToEnd();
-            string output = process.StandardOutput.ReadToEnd();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
             process.WaitForExit();
-            return (err, output);
+        }
+
+        public static void RunCommand(string command)
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.StartInfo.EnvironmentVariables["Path"] = EnvPath;
+            string commandMode = "/C";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                process.StartInfo.FileName = "/bin/bash";
+                commandMode = "-c";
+            }
+            process.StartInfo.Arguments = $"{commandMode} {command}";
+            process.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
+            process.ErrorDataReceived += (s, e) => Console.WriteLine(e.Data);
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit();
         }
     }
 }
