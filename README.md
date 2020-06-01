@@ -27,7 +27,7 @@ PythonNetInstaller.Installer.InstallPip();
 
 ```
 
-<p>After this, you can run python commands:</p>
+<p>After this, you can run python commands. When using pip install commands you MUSt use --user, otherwise it will fail</p>
 
 ```c#
   
