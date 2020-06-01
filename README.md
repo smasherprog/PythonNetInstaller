@@ -15,6 +15,10 @@ Below are some examples of how you can get started
 
 ```c#
 
+//redirect the output to visual studio's debug writeline. The default is to send output to console.writeline
+Installer.ErrorDataReceived = (o) => { Debug.WriteLine(o); };
+Installer.OutputDataReceived = (o) => { Debug.WriteLine(o); };
+
 //Install from URL
 PythonNetInstaller.Installer.InstallPythonFromUri(new Uri("https://www.python.org/ftp/python/3.8.3/python-3.8.3-embed-amd64.zip"));
 //Install from embeded assembly           
@@ -24,7 +28,7 @@ var p = Path.Combine(System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseD
 PythonNetInstaller.Installer.InstallPythonFromZip(p);
 //Install pip
 PythonNetInstaller.Installer.InstallPip();
-
+            
 ```
 
 <p>After this, you can run python commands. When using pip install commands you MUSt use --user, otherwise it will fail</p>
